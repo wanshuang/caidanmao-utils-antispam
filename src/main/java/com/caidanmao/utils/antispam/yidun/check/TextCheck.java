@@ -3,9 +3,7 @@ package com.caidanmao.utils.antispam.yidun.check;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.caidanmao.utils.antispam.yidun.model.YiDunResult;
 import com.caidanmao.utils.antispam.yidun.model.YiDunTextResult;
-import okhttp3.Response;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -37,7 +35,7 @@ public class TextCheck extends AbstractYiDunCheck {
     private final String API_URL = "http://as.dun.163.com/v3/text/check";
 
     @Override
-    public YiDunResult check() throws IOException {
+    public void check() throws IOException {
 
         Map<String, String> params = getParamsInit();
 
@@ -52,22 +50,17 @@ public class TextCheck extends AbstractYiDunCheck {
         String signature = genSignature(params);
         params.put("signature", signature);
 
-        //返回对象　可以修改异步根据sync判断
-        Response response = execute(params, API_URL);
-
-        //解析json返回对象
-        return getResult(response.body().string());
-
+        if (sync) {
+            //同步post
+            execute(params, API_URL);
+        } else {
+            //异步post
+            enqueue(params, API_URL);
+        }
     }
 
     @Override
-    void enqueue(Map<String, String> params) {
-
-    }
-
-    @Override
-    YiDunTextResult getResult(String responseJson) {
-        System.out.println("onResponse: " + responseJson);
+    void setResult(String responseJson) {
         JSONObject jsonObject = JSON.parseObject(responseJson);
         int code = jsonObject.getInteger("code");
         String msg = jsonObject.getString("msg");
@@ -93,6 +86,6 @@ public class TextCheck extends AbstractYiDunCheck {
         }
         result.setCode(code);
         result.setMsg(msg);
-        return result;
+        this.result = result;
     }
 }

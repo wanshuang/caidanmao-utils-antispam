@@ -12,7 +12,6 @@ import com.caidanmao.utils.antispam.yidun.model.LabelInfo;
 import com.caidanmao.utils.antispam.yidun.model.YiDunImageResult;
 import com.caidanmao.utils.antispam.yidun.model.YiDunResult;
 import com.google.common.collect.Lists;
-import okhttp3.Response;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -44,7 +43,7 @@ public class ImageCheck extends AbstractYiDunCheck {
     private final String API_URL = "http://as.dun.163.com/v4/image/check";
 
     @Override
-    public YiDunResult check() throws IOException {
+    public void check() throws IOException {
         Map<String, String> params = getParamsInit();
 
         params.put("businessId", BUSINESSID);
@@ -64,22 +63,17 @@ public class ImageCheck extends AbstractYiDunCheck {
         String signature = genSignature(params);
         params.put("signature", signature);
 
-        //返回对象　可以修改异步根据sync判断
-        Response response = execute(params, API_URL);
-
-        //解析json返回对象
-        return getResult(response.body().string());
-    }
-
-
-    @Override
-    void enqueue(Map<String, String> params) {
-
+        if (sync) {
+            //同步post
+            execute(params, API_URL);
+        } else {
+            //异步post
+            enqueue(params, API_URL);
+        }
     }
 
     @Override
-    YiDunImageResult getResult(String responseJson) {
-        System.out.println("onResponse: " + responseJson);
+    void setResult(String responseJson) {
         JSONObject jsonObject = JSON.parseObject(responseJson);
         int code = jsonObject.getInteger("code");
         String msg = jsonObject.getString("msg");
@@ -109,6 +103,6 @@ public class ImageCheck extends AbstractYiDunCheck {
         }
         result.setCode(code);
         result.setMsg(msg);
-        return result;
+        this.result = result;
     }
 }

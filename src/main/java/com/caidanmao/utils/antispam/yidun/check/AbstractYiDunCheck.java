@@ -2,11 +2,9 @@ package com.caidanmao.utils.antispam.yidun.check;
 
 import com.caidanmao.utils.antispam.yidun.model.YiDunResult;
 import com.google.common.collect.Maps;
-import okhttp3.MultipartBody;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
+import okhttp3.*;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -36,9 +34,11 @@ abstract class AbstractYiDunCheck implements YiDunCheck {
     final int CODE_SUCCESS = 200;
 
     /**
-     * 同步器
+     * 同步器 判断使用 execute or enqueue
      */
     boolean sync = true;
+
+    YiDunResult result;
 
     /**
      * 实例化HttpClient，发送http请求使用，可根据需要自行调参
@@ -81,11 +81,41 @@ abstract class AbstractYiDunCheck implements YiDunCheck {
     }
 
     /**
-     * okhttp 同步请求
+     * okhttp 同步请求器
      *
      * @return
      */
-    Response execute(Map<String, String> params, String api) throws IOException {
+    void execute(Map<String, String> params, String api) throws IOException {
+        Response response = okHttpClient.newCall(createRequest(params, api)).execute();
+        setResult(response.body().string());
+    }
+
+    /**
+     * okhttp 异步请求器
+     *
+     * @return
+     */
+    void enqueue(Map<String, String> params, String api){
+        okHttpClient.newCall(createRequest(params, api)).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NotNull Call call, @NotNull IOException e) {
+                System.out.println(e.toString());
+            }
+
+            @Override
+            public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
+                setResult(response.body().string());
+            }
+        });
+    };
+
+    /**
+     * 创建请求
+     * @param params
+     * @param api
+     * @return
+     */
+    Request createRequest(Map<String, String> params, String api) {
         MultipartBody.Builder requestBuilder = new MultipartBody.Builder();
 
         // 状态请求参数
@@ -97,24 +127,14 @@ abstract class AbstractYiDunCheck implements YiDunCheck {
                 .url(api)
                 .post(requestBuilder.build())
                 .build();
-
-        //返回对象
-        return okHttpClient.newCall(request).execute();
+        return request;
     }
 
-    /**
-     * okhttp 异步请求
-     *
-     * @return
-     */
-    abstract void enqueue(Map<String, String> params);
-
-    abstract YiDunResult getResult(String responseJson);
+    abstract void setResult(String responseJson);
 
     @Override
-    public void setSync(boolean sync) {
-        this.sync = sync;
+    public YiDunResult getResult() {
+        return result;
     }
-
 
 }

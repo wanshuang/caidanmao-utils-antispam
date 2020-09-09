@@ -10,7 +10,7 @@ import java.io.IOException;
  */
 public interface YiDunCheck {
 
-    YiDunResult check() throws IOException;
+    void check() throws IOException;
 
-    void setSync(boolean sync);
+    YiDunResult getResult();
 }

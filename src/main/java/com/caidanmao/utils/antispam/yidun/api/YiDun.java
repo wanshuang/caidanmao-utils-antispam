@@ -1,9 +1,6 @@
 package com.caidanmao.utils.antispam.yidun.api;
 
-import com.caidanmao.utils.antispam.yidun.check.ImageCheck;
-import com.caidanmao.utils.antispam.yidun.check.TextCheck;
-import com.caidanmao.utils.antispam.yidun.check.VideoCheck;
-import com.caidanmao.utils.antispam.yidun.check.YiDunCheck;
+import com.caidanmao.utils.antispam.yidun.check.*;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
@@ -41,31 +38,46 @@ public class YiDun {
         return instance;
     }
 
-    public YiDunCheck image(String url, boolean sync) throws IOException {
+
+    public YiDunCheck imageSync(String url) throws IOException {
+        return image(url, true, null);
+    }
+
+    public YiDunCheck image(String url, boolean sync, AfterCheck afterCheck) throws IOException {
         ImageCheck imageCheck = new ImageCheck(url);
-        this.execute(imageCheck, sync);
+        this.execute(imageCheck, sync, afterCheck);
         return imageCheck;
     }
 
-    public YiDunCheck text(String content, boolean sync) throws IOException {
+
+    public YiDunCheck textSync(String content) throws IOException {
+        return text(content, true, null);
+    }
+
+    public YiDunCheck text(String content, boolean sync, AfterCheck afterCheck) throws IOException {
         TextCheck textCheck = new TextCheck(content);
-        this.execute(textCheck, sync);
+        this.execute(textCheck, sync, afterCheck);
         return textCheck;
     }
 
-    public YiDunCheck video(String url, boolean sync) throws IOException {
+    public YiDunCheck videoSync(String url) throws IOException {
+        return video(url, true, null);
+    }
+
+    public YiDunCheck video(String url, boolean sync, AfterCheck afterCheck) throws IOException {
         VideoCheck videoCheck = new VideoCheck(url);
-        this.execute(videoCheck, sync);
+        this.execute(videoCheck, sync, afterCheck);
         return videoCheck;
     }
 
-    private void execute(YiDunCheck check, boolean sync) throws IOException {
+    private void execute(YiDunCheck check, boolean sync, AfterCheck afterCheck) throws IOException {
         if (sync) {
             check.check();
         } else {
             executorService.execute(() -> {
                 try {
                     check.check();
+                    afterCheck.execute(check.getResult());
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
